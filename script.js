@@ -4,6 +4,8 @@ const size = 8;
 const cellSize = canvas.width / size;
 let board = [];
 let player = 'B';
+let specialMode = false;
+let specialPlayer = '';
 let gameOver = false;
 
 function initBoard() {
@@ -18,8 +20,18 @@ function drawBoard() {
         for (let x = 0; x < size; x++) {
             ctx.fillStyle = "#388e3c";
             ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+
+            let flips = getFlips(x, y, player);
+            if (flips > 0) {
+                if (flips >= 5) ctx.fillStyle = "#90d490";
+                else if (flips >= 3) ctx.fillStyle = "#c6e6c6";
+                else ctx.fillStyle = "#e8f8e8";
+                ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+
             ctx.strokeStyle = "black";
             ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+
             if (board[y][x] === 'B' || board[y][x] === 'W') {
                 ctx.beginPath();
                 ctx.arc(x * cellSize + cellSize / 2, y * cellSize + cellSize / 2, cellSize / 2 - 4, 0, Math.PI * 2);
@@ -49,6 +61,23 @@ function getFlips(x, y, p) {
     return total;
 }
 
+function hasValidMove(p) {
+    for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++)
+            if (getFlips(x, y, p) > 0)
+                return true;
+    return false;
+}
+
+function getValidMoves(p) {
+    let moves = [];
+    for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++)
+            if (getFlips(x, y, p) > 0)
+                moves.push([x, y]);
+    return moves;
+}
+
 function applyMove(x, y, p) {
     let dirs = [[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
     board[y][x] = p;
@@ -67,29 +96,34 @@ function applyMove(x, y, p) {
     }
 }
 
-function hasValidMove(p) {
-    for (let y = 0; y < size; y++)
-        for (let x = 0; x < size; x++)
-            if (getFlips(x, y, p) > 0)
-                return true;
-    return false;
-}
-
-function getValidMoves(p) {
-    let moves = [];
-    for (let y = 0; y < size; y++)
-        for (let x = 0; x < size; x++)
-            if (getFlips(x, y, p) > 0)
-                moves.push([x, y]);
-    return moves;
-}
-
 function handleClick(e) {
-    if (gameOver || player !== 'B') return;
+    if (gameOver) return;
     let x = Math.floor(e.offsetX / cellSize);
     let y = Math.floor(e.offsetY / cellSize);
-    if (getFlips(x, y, player) === 0) return;
+
+    if (specialMode) {
+        if (board[y][x] === specialPlayer) {
+            board[y][x] = specialPlayer === 'B' ? 'W' : 'B';
+            specialMode = false;
+            nextTurn();
+            drawBoard();
+        }
+        return;
+    }
+
+    let flips = getFlips(x, y, player);
+    if (flips === 0) return;
+
     applyMove(x, y, player);
+    drawBoard();
+
+    if (flips >= 2) {
+        specialMode = true;
+        specialPlayer = player;
+        alert("SPECIAL RULE! Click your disc to flip it.");
+        return;
+    }
+
     nextTurn();
 }
 
@@ -114,7 +148,22 @@ function aiMove() {
         return;
     }
     let [x, y] = moves[Math.floor(Math.random() * moves.length)];
+    let flips = getFlips(x, y, 'W');
     applyMove(x, y, 'W');
+    drawBoard();
+
+    if (flips >= 2) {
+        let ownDiscs = [];
+        for (let yy = 0; yy < size; yy++)
+            for (let xx = 0; xx < size; xx++)
+                if (board[yy][xx] === 'W')
+                    ownDiscs.push([xx, yy]);
+        if (ownDiscs.length) {
+            let [fx, fy] = ownDiscs[Math.floor(Math.random() * ownDiscs.length)];
+            board[fy][fx] = 'B';
+            drawBoard();
+        }
+    }
     nextTurn();
 }
 
