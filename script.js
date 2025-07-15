@@ -1,5 +1,9 @@
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
+const scoreDiv = document.getElementById("score");
+const messageDiv = document.getElementById("message");
+const specialCountDiv = document.getElementById("specialCount");
+
 const size = 8;
 const cellSize = canvas.width / size;
 let board = [];
@@ -7,11 +11,14 @@ let player = 'B';
 let specialMode = false;
 let specialPlayer = '';
 let gameOver = false;
+let specialCount = 0;
 
 function initBoard() {
     board = Array.from({ length: size }, () => Array(size).fill('.'));
     board[3][3] = board[4][4] = 'W';
     board[3][4] = board[4][3] = 'B';
+    updateScore();
+    updateSpecialCount();
 }
 
 function drawBoard() {
@@ -41,6 +48,23 @@ function drawBoard() {
             }
         }
     }
+    updateScore();
+    updateSpecialCount();
+}
+
+function updateScore() {
+    let b = 0, w = 0;
+    for (let row of board) {
+        for (let cell of row) {
+            if (cell === 'B') b++;
+            if (cell === 'W') w++;
+        }
+    }
+    scoreDiv.innerText = `Black: ${b}  White: ${w}`;
+}
+
+function updateSpecialCount() {
+    specialCountDiv.innerText = `Special Rules activated: ${specialCount}`;
 }
 
 function getFlips(x, y, p) {
@@ -105,6 +129,7 @@ function handleClick(e) {
         if (board[y][x] === specialPlayer) {
             board[y][x] = specialPlayer === 'B' ? 'W' : 'B';
             specialMode = false;
+            messageDiv.innerText = "";
             nextTurn();
             drawBoard();
         }
@@ -118,9 +143,11 @@ function handleClick(e) {
     drawBoard();
 
     if (flips >= 2) {
+        specialCount++;
+        updateSpecialCount();
         specialMode = true;
         specialPlayer = player;
-        alert("SPECIAL RULE! Click your disc to flip it.");
+        messageDiv.innerText = "SPECIAL RULE! Click your disc to flip it.";
         return;
     }
 
@@ -132,8 +159,8 @@ function nextTurn() {
     if (!hasValidMove(player)) {
         player = player === 'B' ? 'W' : 'B';
         if (!hasValidMove(player)) {
-            alert("Game Over!");
             gameOver = true;
+            messageDiv.innerText = "Game Over!";
             return;
         }
     }
@@ -153,6 +180,8 @@ function aiMove() {
     drawBoard();
 
     if (flips >= 2) {
+        specialCount++;
+        updateSpecialCount();
         let ownDiscs = [];
         for (let yy = 0; yy < size; yy++)
             for (let xx = 0; xx < size; xx++)
