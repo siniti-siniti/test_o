@@ -155,10 +155,8 @@ function handleClick(e) {
 function nextTurn() {
     player = player === 'B' ? 'W' : 'B';
 
-    // 自分が置けなければ自動パス
     if (!hasValidMove(player)) {
         player = player === 'B' ? 'W' : 'B';
-        // 相手も置けなければ終了
         if (!hasValidMove(player)) {
             showGameOver();
             return;
